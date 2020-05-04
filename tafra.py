@@ -18,7 +18,8 @@ import dataclasses as dc
 import numpy as np
 from pandas import DataFrame # just for mypy...
 
-from typing import Any, Callable, Dict, List, Tuple, Optional, Iterable, Union, cast
+from typing import Any, Callable, Dict, List, Iterable, Tuple, Optional, Union
+from typing import cast
 
 InitAggregation = Dict[
     str,
@@ -366,8 +367,7 @@ class AggMethod:
         for col in self._group_by_cols:
             if col not in cols:
                 raise KeyError(f'{col} does not exist in tafra')
-        for rename, agg in self._aggregation.items():
-            col = self._aggregation[rename][1]
+        for (_, col) in self._aggregation.values():
             if col not in cols:
                 raise KeyError(f'{col} does not exist in tafra')
         # we don't have to use all the columns!
@@ -389,13 +389,6 @@ class AggMethod:
                 *((rename, agg[1]) for rename, agg in self._aggregation.items())
             )
         }
-
-    # def apply(self, tafra: Tafra) -> Tafra:
-    #     """Implement the `AggMethod`.
-    #     Should probably call `unique_groups` to obtain the set of grouped values.
-    #     Assign tafra['__id__'] for enumator in result rows.
-    #     """
-    #     raise NotImplementedError
 
 
 @dc.dataclass
@@ -456,10 +449,6 @@ class Transform(AggMethod):
 class IterateBy(AggMethod):
     """Analogy to `pandas.DataFrame.groupby()`, i.e. an Iterable of `Tafra` objects.
     """
-
-    def __postinit__(self, *args):
-        pass
-
     def apply(self, tafra: Tafra) -> Iterable[Tuple[int, Tafra]]:
         self._validate(tafra)
         unique = self.unique_groups(tafra)
@@ -473,8 +462,6 @@ class IterateBy(AggMethod):
                 which_rows &= tafra[col] == val
 
             yield (i, tafra[which_rows])
-
-        return
 
 
 Tafra.copy.__doc__ += '\n\nnumpy doc string:\n' + np.ndarray.copy.__doc__  # type: ignore
