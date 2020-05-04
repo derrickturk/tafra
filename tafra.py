@@ -334,7 +334,7 @@ class Tafra:
         """
         return Transform(group_by, aggregation).apply(self)
 
-    def iterate_by(self, group_by: Iterable[str]) -> Iterable[Tuple[int, 'Tafra']]:
+    def iterate_by(self, group_by: Iterable[str]) -> Iterable[Tuple[Tuple[Any, ...], 'Tafra']]:
         """Helper function to implement the `IterateBy` class.
         """
         yield from IterateBy(group_by, {}).apply(self)
@@ -442,14 +442,12 @@ class Transform(AggMethod):
         return Tafra(result)
 
 
-# TODO: it's probably better for this to return (UniqueTuple, Tafra) than
-#   to enumerate - the caller can enumerate but doesn't have easy access
-#   to the unique tuple
 @dc.dataclass
 class IterateBy(AggMethod):
     """Analogy to `pandas.DataFrame.groupby()`, i.e. an Iterable of `Tafra` objects.
+    Yields tuples of ((unique grouping values, ...), subset tafra)
     """
-    def apply(self, tafra: Tafra) -> Iterable[Tuple[int, Tafra]]:
+    def apply(self, tafra: Tafra) -> Iterable[Tuple[Tuple[Any, ...], Tafra]]:
         self._validate(tafra)
         unique = self.unique_groups(tafra)
 
@@ -461,7 +459,7 @@ class IterateBy(AggMethod):
             for val, col in zip(u, self._group_by_cols):
                 which_rows &= tafra[col] == val
 
-            yield (i, tafra[which_rows])
+            yield (u, tafra[which_rows])
 
 
 Tafra.copy.__doc__ += '\n\nnumpy doc string:\n' + np.ndarray.copy.__doc__  # type: ignore
